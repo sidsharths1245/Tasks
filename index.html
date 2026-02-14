@@ -221,7 +221,7 @@
             width: 100%; padding: 12px; margin-bottom: 10px;
             background: var(--bg-color); border: none; border-radius: 10px; color: var(--text-color);
         }
-        .btn-full { width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--primary-color); color: white; font-weight: bold; }
+        .btn-full { width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--primary-color); color: white; font-weight: bold; cursor: pointer; }
         
         .chip-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
         .time-chip {
@@ -378,6 +378,25 @@
         </div>
     </div>
 
+    <div id="timerDoneModal" class="modal-overlay">
+        <div class="modal-content" style="text-align:center">
+            <h2 style="margin-top:0">Time's Up!</h2>
+            <p id="timerDoneMessage" style="color:var(--text-color); margin-bottom:25px; font-size:1.1rem;"></p>
+            
+            <div style="display:flex; flex-direction:column; gap:10px">
+                <button class="btn-full" style="background:var(--success-color)" id="btnTimerComplete">
+                    <span class="material-icons-round" style="vertical-align:middle; font-size:18px; margin-right:5px">check</span> Complete Task
+                </button>
+                <button class="btn-full" style="background:var(--info-color)" id="btnTimerAdd1">
+                    <span class="material-icons-round" style="vertical-align:middle; font-size:18px; margin-right:5px">add</span> +1 Min & Restart
+                </button>
+                <button class="btn-full" style="background:var(--subtext-color)" id="btnTimerReset">
+                    <span class="material-icons-round" style="vertical-align:middle; font-size:18px; margin-right:5px">replay</span> Reset Timer
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="dialogModal" class="modal-overlay">
         <div class="modal-content">
             <h3 id="dialogTitle" style="margin-top:0">Confirm</h3>
@@ -399,6 +418,7 @@
         let sortOrder = localStorage.getItem('sortOrder') || 'desc';
         
         let currentMode = 'add';
+        let currentTimerTask = null;
         let wakeLock = null;
         let audioCtx;
         let dialogResolve = null;
@@ -668,6 +688,45 @@
             }
         }
 
+        /* --- Timer Done Modal Logic --- */
+        function openTimerDoneModal(task) {
+            currentTimerTask = task;
+            document.getElementById('timerDoneMessage').innerText = `"${task.name}" is finished.`;
+            document.getElementById('timerDoneModal').classList.add('open');
+        }
+
+        function closeTimerDoneModal() {
+            document.getElementById('timerDoneModal').classList.remove('open');
+            currentTimerTask = null;
+        }
+
+        // Timer Done Actions
+        document.getElementById('btnTimerComplete').onclick = () => {
+            if(currentTimerTask) toggleComplete(currentTimerTask.id);
+            closeTimerDoneModal();
+        };
+
+        document.getElementById('btnTimerAdd1').onclick = () => {
+            if(currentTimerTask) {
+                addTime(currentTimerTask.id); // Adds 60s
+                // Restart immediately
+                const t = tasks.find(x => x.id === currentTimerTask.id);
+                if(t) { 
+                    t.isRunning = true; 
+                    reqWL(); 
+                    saveData(); 
+                    render(); 
+                }
+            }
+            closeTimerDoneModal();
+        };
+
+        document.getElementById('btnTimerReset').onclick = () => {
+            if(currentTimerTask) resetTimer(currentTimerTask.id);
+            closeTimerDoneModal();
+        };
+
+        /* --- Formatting & Utilities --- */
         function formatTotalDuration(seconds) {
             if (seconds === 0) return '0s';
             const h = Math.floor(seconds / 3600);
@@ -1069,7 +1128,8 @@
                         t.isRunning = false; 
                         playSound(); 
                         sendNotification("Timer Finished", `Completed: ${t.name}`);
-                        showDialog("Timer Done", "Task completed: " + t.name, false); 
+                        // showDialog("Timer Done", "Task completed: " + t.name, false); 
+                        openTimerDoneModal(t); // NEW: Open custom modal instead of generic dialog
                         relWL(); 
                     }
                 }
