@@ -16,6 +16,8 @@
             --success-color: #4caf50;
             --info-color: #2196f3;
             --warning-color: #ff9800;
+            --tag-bg: #e3f2fd;
+            --tag-text: #1976d2;
             --border-radius: 16px;
             --shadow: 0 4px 12px rgba(0,0,0,0.05);
             --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -26,6 +28,8 @@
             --card-bg: #1e1e1e;
             --text-color: #e4e6eb;
             --subtext-color: #b0b3b8;
+            --tag-bg: #1565c0;
+            --tag-text: #e3f2fd;
             --shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
@@ -100,7 +104,7 @@
         .task-list { list-style: none; padding: 0; margin: 0; position: relative; }
 
         .task-wrapper {
-            position: relative; margin-bottom: 15px; height: 85px;
+            position: relative; margin-bottom: 15px; height: auto; min-height: 85px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             background-color: #e0e0e0;
@@ -131,8 +135,8 @@
 
         /* --- The Card --- */
         .task-card {
-            position: relative; background: var(--card-bg); width: 100%; height: 100%;
-            z-index: 10; display: flex; align-items: center; padding: 0 10px 0 15px;
+            position: relative; background: var(--card-bg); width: 100%; height: 100%; min-height: 85px;
+            z-index: 10; display: flex; align-items: center; padding: 12px 10px 12px 15px;
             border-left: 6px solid transparent; border-radius: var(--border-radius);
             transition: transform 0.1s linear;
             overflow: hidden;
@@ -151,9 +155,17 @@
         .priority-med .progress-bar { background: var(--warning-color); }
         .priority-low .progress-bar { background: var(--success-color); }
 
-        .task-info { flex: 1; margin-left: 10px; cursor: pointer; }
+        .task-info { flex: 1; margin-left: 10px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
         .task-name { font-weight: 600; font-size: 1.1rem; display: block; margin-bottom: 4px; }
         .task-time { font-family: monospace; font-size: 0.9rem; color: var(--subtext-color); display: flex; align-items: center; gap: 5px; }
+        
+        /* New Tag Styles on Card */
+        .task-tags-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .card-tag { 
+            font-size: 0.7rem; background: var(--tag-bg); color: var(--tag-text); 
+            padding: 2px 8px; border-radius: 8px; font-weight: 600;
+        }
+        .desc-icon { font-size: 14px; color: var(--subtext-color); margin-left: 5px; vertical-align: middle; }
 
         .card-controls { display: flex; gap: 5px; align-items: center; z-index: 20; }
         
@@ -188,9 +200,10 @@
             background: var(--card-bg); width: 90%; max-width: 400px;
             border-radius: 20px; padding: 25px; animation: slideUp 0.3s;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-height: 85vh; overflow-y: auto;
         }
 
-        /* --- List/History/Bin Content --- */
+        /* --- History/Bin Content --- */
         .history-content {
             height: 80vh; max-width: 500px; width: 95%; 
             display: flex; flex-direction: column; overflow: hidden;
@@ -217,10 +230,11 @@
         .btn-primary { background: var(--primary-color); color: white; border: none; font-weight: 600; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
         .btn-danger { background: var(--danger-color); color: white; border: none; font-weight: 600; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
 
-        .form-input, .form-select {
+        .form-input, .form-select, .form-textarea {
             width: 100%; padding: 12px; margin-bottom: 10px;
             background: var(--bg-color); border: none; border-radius: 10px; color: var(--text-color);
         }
+        .form-textarea { resize: vertical; min-height: 80px; font-family: inherit; }
         .btn-full { width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--primary-color); color: white; font-weight: bold; cursor: pointer; }
         
         .chip-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
@@ -230,6 +244,18 @@
             color: var(--text-color); transition: background 0.2s;
         }
         .time-chip:active { background: var(--primary-color); color: white; }
+
+        /* Tag Selection Styles */
+        .tag-select-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        .tag-option {
+            background: var(--bg-color); border: 1px solid transparent; color: var(--text-color);
+            padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tag-option.selected {
+            background: var(--tag-bg); color: var(--tag-text); border-color: var(--tag-text);
+        }
+        .add-tag-wrapper { display: flex; gap: 8px; margin-bottom: 10px; }
 
         /* --- Settings List --- */
         .settings-item {
@@ -330,6 +356,18 @@
             
             <label style="font-size:0.8rem; color:var(--subtext-color)">Task Name</label>
             <input type="text" id="taskName" class="form-input" placeholder="Enter name...">
+            
+            <label style="font-size:0.8rem; color:var(--subtext-color)">Description</label>
+            <textarea id="taskDesc" class="form-textarea" placeholder="Notes, links, details..."></textarea>
+
+            <label style="font-size:0.8rem; color:var(--subtext-color)">Tags</label>
+            <div class="add-tag-wrapper">
+                <input type="text" id="newTagInput" class="form-input" style="margin-bottom:0" placeholder="New tag...">
+                <button class="btn-mini" style="background:var(--primary-color); color:white; width:50px" onclick="addNewTag()">
+                    <span class="material-icons-round">add</span>
+                </button>
+            </div>
+            <div id="tagSelectionArea" class="tag-select-container"></div>
             
             <label style="font-size:0.8rem; color:var(--subtext-color)">Duration</label>
             <div class="chip-container">
@@ -436,6 +474,7 @@
         let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
         let historyTasks = JSON.parse(localStorage.getItem('history')) || [];
         let deletedTasks = JSON.parse(localStorage.getItem('deleted')) || []; 
+        let availableTags = JSON.parse(localStorage.getItem('tags')) || ['Work', 'Study', 'Health', 'Errand'];
         let currentTune = localStorage.getItem('tune') || 'beep';
         
         let sortField = localStorage.getItem('sortField') || 'manual';
@@ -443,6 +482,7 @@
         
         let currentMode = 'add';
         let currentTimerTask = null;
+        let selectedTags = []; // Temp storage for modal
         let wakeLock = null;
         let dialogResolve = null;
 
@@ -594,6 +634,20 @@
                 const timeTxt = `${m}m ${s}s`;
                 const leftIcon = task.completed ? 'undo' : 'check_circle';
 
+                // Tags HTML
+                let tagsHtml = '';
+                if (task.tags && task.tags.length > 0) {
+                    tagsHtml = `<div class="task-tags-row">
+                        ${task.tags.map(tag => `<span class="card-tag">${tag}</span>`).join('')}
+                    </div>`;
+                }
+                
+                // Description Icon
+                let descIcon = '';
+                if(task.desc && task.desc.trim().length > 0) {
+                    descIcon = `<span class="material-icons-round desc-icon">description</span>`;
+                }
+
                 li.innerHTML = `
                     <div class="bg-icon icon-left"><span class="material-icons-round">${leftIcon}</span></div>
                     <div class="bg-icon icon-right" style="font-size:1.2rem; font-weight:bold; white-space:nowrap;">+1 Min</div>
@@ -602,8 +656,9 @@
                         <div class="progress-bar" style="transform:scaleX(${pct})"></div>
                         
                         <div class="task-info" onclick="openModal('edit', ${task.id})">
-                            <span class="task-name">${task.name}</span>
+                            <span class="task-name">${task.name} ${descIcon}</span>
                             ${!task.completed ? `<span class="task-time"><span class="material-icons-round" style="font-size:14px">timer</span> ${timeTxt}</span>` : ''}
+                            ${tagsHtml}
                         </div>
                         
                         <div class="card-controls">
@@ -809,7 +864,190 @@
             currentTune = id;
             localStorage.setItem('tune', currentTune);
             renderSettings();
-            audioSystem.play(id); // Preview sound
+            audioSystem.play(id); 
+        }
+
+        /* --- Modal/Dialog --- */
+        function showDialog(title, message, isConfirm = true, isDanger = false) {
+            return new Promise((resolve) => {
+                dialogResolve = resolve;
+                document.getElementById('dialogTitle').innerText = title;
+                document.getElementById('dialogMessage').innerText = message;
+                const btnConfirm = document.getElementById('dialogConfirm');
+                const btnCancel = document.getElementById('dialogCancel');
+                btnConfirm.className = isDanger ? 'btn-danger' : 'btn-primary';
+                btnConfirm.innerText = isConfirm ? 'Yes' : 'OK';
+                btnCancel.style.display = isConfirm ? 'block' : 'none';
+                document.getElementById('dialogModal').classList.add('open');
+            });
+        }
+        document.getElementById('dialogConfirm').onclick = () => { closeDialog(true); };
+        document.getElementById('dialogCancel').onclick = () => { closeDialog(false); };
+        function closeDialog(result) {
+            document.getElementById('dialogModal').classList.remove('open');
+            if (dialogResolve) dialogResolve(result);
+            dialogResolve = null;
+        }
+
+        function openModal(mode, id) {
+            currentMode = mode;
+            selectedTags = []; // Reset selected tags
+            document.getElementById('taskModal').classList.add('open');
+            document.getElementById('modalTitle').innerText = mode==='add'?'Add Task':'Edit Task';
+            
+            if(mode==='edit') {
+                const t = tasks.find(x=>x.id===id);
+                document.getElementById('taskId').value = t.id;
+                document.getElementById('taskName').value = t.name;
+                document.getElementById('taskDesc').value = t.desc || '';
+                document.getElementById('taskMin').value = Math.floor(t.remainingTime/60);
+                document.getElementById('taskSec').value = t.remainingTime%60;
+                document.getElementById('taskPriority').value = t.priority;
+                if(t.tags) selectedTags = [...t.tags];
+            } else {
+                document.getElementById('taskId').value = '';
+                document.getElementById('taskName').value = '';
+                document.getElementById('taskDesc').value = '';
+                document.getElementById('taskMin').value = '';
+                document.getElementById('taskSec').value = '';
+                selectedTags = [];
+            }
+            renderTagSelection();
+        }
+
+        /* --- Tags Logic --- */
+        function renderTagSelection() {
+            const container = document.getElementById('tagSelectionArea');
+            container.innerHTML = '';
+            availableTags.forEach(tag => {
+                const div = document.createElement('div');
+                div.className = `tag-option ${selectedTags.includes(tag) ? 'selected' : ''}`;
+                div.innerText = tag;
+                div.onclick = () => {
+                    if(selectedTags.includes(tag)) selectedTags = selectedTags.filter(t => t !== tag);
+                    else selectedTags.push(tag);
+                    renderTagSelection();
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function addNewTag() {
+            const input = document.getElementById('newTagInput');
+            const val = input.value.trim();
+            if(val && !availableTags.includes(val)) {
+                availableTags.push(val);
+                selectedTags.push(val); // Auto-select created tag
+                localStorage.setItem('tags', JSON.stringify(availableTags));
+                input.value = '';
+                renderTagSelection();
+            }
+        }
+
+        function setQuickTime(m) {
+            document.getElementById('taskMin').value = m;
+            document.getElementById('taskSec').value = 0;
+        }
+        
+        function saveTask() {
+            const name = document.getElementById('taskName').value;
+            const desc = document.getElementById('taskDesc').value;
+            const min = parseInt(document.getElementById('taskMin').value)||0;
+            const sec = parseInt(document.getElementById('taskSec').value)||0;
+            const prio = document.getElementById('taskPriority').value;
+            const id = parseInt(document.getElementById('taskId').value);
+            const totalSec = (min*60) + sec;
+            
+            if(currentMode === 'add') {
+                tasks.unshift({
+                    id: Date.now(), name: name, desc: desc, priority: prio,
+                    tags: [...selectedTags],
+                    originalDuration: totalSec, remainingTime: totalSec,
+                    completed: false, isRunning: false
+                });
+            } else {
+                const t = tasks.find(x=>x.id===id);
+                if(t) {
+                    t.name = name; t.desc = desc; t.priority = prio;
+                    t.tags = [...selectedTags];
+                    if(t.remainingTime !== totalSec && Math.abs(t.remainingTime - totalSec) > 5) {
+                        t.remainingTime = totalSec; t.originalDuration = totalSec;
+                    }
+                }
+            }
+            saveData(); closeModal(); render();
+        }
+        function closeModal() { document.getElementById('taskModal').classList.remove('open'); }
+        function toggleMenu() { document.getElementById('dropdownMenu').classList.toggle('show'); document.getElementById('sortSubmenu').classList.remove('open'); }
+        function toggleSubmenu() { document.getElementById('sortSubmenu').classList.toggle('open'); }
+        window.onclick = e => { if(!e.target.closest('.menu-container')) document.getElementById('dropdownMenu').classList.remove('show'); }
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            document.getElementById('themeText').innerText = isDark ? "Light Mode" : "Dark Mode";
+            document.getElementById('themeIcon').innerText = isDark ? "light_mode" : "dark_mode";
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+        if(localStorage.getItem('theme')==='dark') toggleTheme();
+        function toggleCompletedList() {
+            document.getElementById('completedTasksList').classList.toggle('hidden');
+            document.querySelector('.completed-header').classList.toggle('collapsed');
+        }
+        function saveData() { localStorage.setItem('tasks', JSON.stringify(tasks)); }
+        function saveHistory() { localStorage.setItem('history', JSON.stringify(historyTasks)); }
+        function saveDeleted() { localStorage.setItem('deleted', JSON.stringify(deletedTasks)); }
+        
+        function exportData() {
+            const data = { tasks: tasks, history: historyTasks, deleted: deletedTasks, tune: currentTune, tags: availableTags };
+            const a = document.createElement('a');
+            a.href = "data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(data));
+            a.download='tasks_backup.json'; a.click();
+        }
+        function importData(inp) {
+            const r=new FileReader(); 
+            r.onload=e=>{
+                const data = JSON.parse(e.target.result);
+                if(Array.isArray(data)) {
+                    tasks = data; 
+                } else {
+                    tasks = data.tasks || [];
+                    historyTasks = data.history || [];
+                    deletedTasks = data.deleted || [];
+                    if(data.tune) currentTune = data.tune;
+                    if(data.tags) availableTags = data.tags;
+                }
+                saveData(); saveHistory(); saveDeleted(); localStorage.setItem('tags', JSON.stringify(availableTags)); render();
+            };
+            r.readAsText(inp.files[0]);
+        }
+        /* --- Sorting --- */
+        function setSort(field) {
+            sortField = field;
+            if(field === 'priority') sortOrder = 'desc';
+            else if(field === 'duration') sortOrder = 'asc';
+            localStorage.setItem('sortField', sortField);
+            localStorage.setItem('sortOrder', sortOrder);
+            render();
+            document.getElementById('dropdownMenu').classList.remove('show');
+        }
+        function toggleSortDirection() {
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+            localStorage.setItem('sortOrder', sortOrder);
+            render();
+        }
+
+        /* --- Notifications Helper --- */
+        function requestNotificationPermission() {
+            if ("Notification" in window && Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+        }
+        function sendNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    new Notification(title, { body: body, icon: 'https://cdn-icons-png.flaticon.com/512/2098/2098589.png' });
+                } catch(e) { console.log("Notif error", e); }
+            }
         }
 
         /* --- Timer Done Modal Logic --- */
@@ -824,7 +1062,6 @@
             currentTimerTask = null;
         }
 
-        // Timer Done Actions
         document.getElementById('btnTimerComplete').onclick = () => {
             if(currentTimerTask) toggleComplete(currentTimerTask.id);
             closeTimerDoneModal();
@@ -832,8 +1069,7 @@
 
         document.getElementById('btnTimerAdd1').onclick = () => {
             if(currentTimerTask) {
-                addTime(currentTimerTask.id); // Adds 60s
-                // Restart immediately
+                addTime(currentTimerTask.id); 
                 const t = tasks.find(x => x.id === currentTimerTask.id);
                 if(t) { 
                     t.isRunning = true; 
@@ -850,7 +1086,41 @@
             closeTimerDoneModal();
         };
 
-        /* --- Formatting & Utilities --- */
+        /* --- Main Loop --- */
+        setInterval(() => {
+            let u = false;
+            let activeTask = null;
+
+            tasks.forEach(t => {
+                if(t.isRunning && t.remainingTime > 0) {
+                    activeTask = t;
+                    t.remainingTime--; 
+                    u = true;
+                    if(t.remainingTime === 0) { 
+                        t.isRunning = false; 
+                        audioSystem.play(currentTune); 
+                        sendNotification("Timer Finished", `Completed: ${t.name}`);
+                        openTimerDoneModal(t); 
+                        relWL(); 
+                    }
+                }
+            });
+
+            if(activeTask) {
+                const m = Math.floor(activeTask.remainingTime/60);
+                const s = activeTask.remainingTime%60;
+                const paddedS = s < 10 ? '0'+s : s;
+                document.title = `(${m}:${paddedS}) ${activeTask.name}`;
+            } else {
+                document.title = "Task Manager";
+            }
+
+            if(u) {
+                saveData(); 
+                render();
+            }
+        }, 1000);
+
         function formatTotalDuration(seconds) {
             if (seconds === 0) return '0s';
             const h = Math.floor(seconds / 3600);
@@ -1075,8 +1345,8 @@
             }
         }
         function toggleTimer(id) {
-            audioSystem.init(); // Init Audio Context on interaction
-            requestNotificationPermission(); // Ask for permission on click
+            audioSystem.init(); 
+            requestNotificationPermission(); 
             const t = tasks.find(x=>x.id===id);
             if(!t.isRunning) {
                 tasks.forEach(x => x.isRunning = false);
@@ -1100,181 +1370,6 @@
             }
         }
 
-        /* --- Modal/Dialog --- */
-        function showDialog(title, message, isConfirm = true, isDanger = false) {
-            return new Promise((resolve) => {
-                dialogResolve = resolve;
-                document.getElementById('dialogTitle').innerText = title;
-                document.getElementById('dialogMessage').innerText = message;
-                const btnConfirm = document.getElementById('dialogConfirm');
-                const btnCancel = document.getElementById('dialogCancel');
-                btnConfirm.className = isDanger ? 'btn-danger' : 'btn-primary';
-                btnConfirm.innerText = isConfirm ? 'Yes' : 'OK';
-                btnCancel.style.display = isConfirm ? 'block' : 'none';
-                document.getElementById('dialogModal').classList.add('open');
-            });
-        }
-        document.getElementById('dialogConfirm').onclick = () => { closeDialog(true); };
-        document.getElementById('dialogCancel').onclick = () => { closeDialog(false); };
-        function closeDialog(result) {
-            document.getElementById('dialogModal').classList.remove('open');
-            if (dialogResolve) dialogResolve(result);
-            dialogResolve = null;
-        }
-
-        function openModal(mode, id) {
-            currentMode = mode;
-            document.getElementById('taskModal').classList.add('open');
-            document.getElementById('modalTitle').innerText = mode==='add'?'Add Task':'Edit Task';
-            if(mode==='edit') {
-                const t = tasks.find(x=>x.id===id);
-                document.getElementById('taskId').value = t.id;
-                document.getElementById('taskName').value = t.name;
-                document.getElementById('taskMin').value = Math.floor(t.remainingTime/60);
-                document.getElementById('taskSec').value = t.remainingTime%60;
-                document.getElementById('taskPriority').value = t.priority;
-            } else {
-                document.getElementById('taskId').value = '';
-                document.getElementById('taskName').value = '';
-                document.getElementById('taskMin').value = '';
-                document.getElementById('taskSec').value = '';
-            }
-        }
-        function setQuickTime(m) {
-            document.getElementById('taskMin').value = m;
-            document.getElementById('taskSec').value = 0;
-        }
-        function saveTask() {
-            const name = document.getElementById('taskName').value;
-            const min = parseInt(document.getElementById('taskMin').value)||0;
-            const sec = parseInt(document.getElementById('taskSec').value)||0;
-            const prio = document.getElementById('taskPriority').value;
-            const id = parseInt(document.getElementById('taskId').value);
-            const totalSec = (min*60) + sec;
-            if(currentMode === 'add') {
-                tasks.unshift({
-                    id: Date.now(), name: name, priority: prio,
-                    originalDuration: totalSec, remainingTime: totalSec,
-                    completed: false, isRunning: false
-                });
-            } else {
-                const t = tasks.find(x=>x.id===id);
-                if(t) {
-                    t.name = name; t.priority = prio;
-                    if(t.remainingTime !== totalSec && Math.abs(t.remainingTime - totalSec) > 5) {
-                        t.remainingTime = totalSec; t.originalDuration = totalSec;
-                    }
-                }
-            }
-            saveData(); closeModal(); render();
-        }
-        function closeModal() { document.getElementById('taskModal').classList.remove('open'); }
-        function toggleMenu() { document.getElementById('dropdownMenu').classList.toggle('show'); document.getElementById('sortSubmenu').classList.remove('open'); }
-        function toggleSubmenu() { document.getElementById('sortSubmenu').classList.toggle('open'); }
-        window.onclick = e => { if(!e.target.closest('.menu-container')) document.getElementById('dropdownMenu').classList.remove('show'); }
-        function toggleTheme() {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            document.getElementById('themeText').innerText = isDark ? "Light Mode" : "Dark Mode";
-            document.getElementById('themeIcon').innerText = isDark ? "light_mode" : "dark_mode";
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        }
-        if(localStorage.getItem('theme')==='dark') toggleTheme();
-        function toggleCompletedList() {
-            document.getElementById('completedTasksList').classList.toggle('hidden');
-            document.querySelector('.completed-header').classList.toggle('collapsed');
-        }
-        function saveData() { localStorage.setItem('tasks', JSON.stringify(tasks)); }
-        function saveHistory() { localStorage.setItem('history', JSON.stringify(historyTasks)); }
-        function saveDeleted() { localStorage.setItem('deleted', JSON.stringify(deletedTasks)); }
-        
-        function exportData() {
-            const data = { tasks: tasks, history: historyTasks, deleted: deletedTasks, tune: currentTune };
-            const a = document.createElement('a');
-            a.href = "data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(data));
-            a.download='tasks_backup.json'; a.click();
-        }
-        function importData(inp) {
-            const r=new FileReader(); 
-            r.onload=e=>{
-                const data = JSON.parse(e.target.result);
-                if(Array.isArray(data)) {
-                    tasks = data; // Legacy support
-                } else {
-                    tasks = data.tasks || [];
-                    historyTasks = data.history || [];
-                    deletedTasks = data.deleted || [];
-                    if(data.tune) currentTune = data.tune;
-                }
-                saveData(); saveHistory(); saveDeleted(); render();
-            };
-            r.readAsText(inp.files[0]);
-        }
-        /* --- Sorting --- */
-        function setSort(field) {
-            sortField = field;
-            if(field === 'priority') sortOrder = 'desc';
-            else if(field === 'duration') sortOrder = 'asc';
-            localStorage.setItem('sortField', sortField);
-            localStorage.setItem('sortOrder', sortOrder);
-            render();
-            document.getElementById('dropdownMenu').classList.remove('show');
-        }
-        function toggleSortDirection() {
-            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-            localStorage.setItem('sortOrder', sortOrder);
-            render();
-        }
-
-        /* --- Notifications Helper --- */
-        function requestNotificationPermission() {
-            if ("Notification" in window && Notification.permission !== "granted") {
-                Notification.requestPermission();
-            }
-        }
-        function sendNotification(title, body) {
-            if ("Notification" in window && Notification.permission === "granted") {
-                try {
-                    new Notification(title, { body: body, icon: 'https://cdn-icons-png.flaticon.com/512/2098/2098589.png' });
-                } catch(e) { console.log("Notif error", e); }
-            }
-        }
-
-        setInterval(() => {
-            let u = false;
-            let activeTask = null;
-
-            tasks.forEach(t => {
-                if(t.isRunning && t.remainingTime > 0) {
-                    activeTask = t;
-                    t.remainingTime--; 
-                    u = true;
-                    if(t.remainingTime === 0) { 
-                        t.isRunning = false; 
-                        audioSystem.play(currentTune); // Play selected tune
-                        sendNotification("Timer Finished", `Completed: ${t.name}`);
-                        openTimerDoneModal(t); 
-                        relWL(); 
-                    }
-                }
-            });
-
-            // Update Tab Title
-            if(activeTask) {
-                const m = Math.floor(activeTask.remainingTime/60);
-                const s = activeTask.remainingTime%60;
-                const paddedS = s < 10 ? '0'+s : s;
-                document.title = `(${m}:${paddedS}) ${activeTask.name}`;
-            } else {
-                document.title = "Task Manager";
-            }
-
-            if(u) {
-                saveData(); 
-                render();
-            }
-        }, 1000);
-
         async function reqWL(){ try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){} }
         function relWL(){ if(wakeLock){wakeLock.release(); wakeLock=null;} }
 
@@ -1282,3 +1377,4 @@
     </script>
 </body>
 </html>
+
