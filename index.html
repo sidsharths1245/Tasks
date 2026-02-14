@@ -231,6 +231,16 @@
         }
         .time-chip:active { background: var(--primary-color); color: white; }
 
+        /* --- Settings List --- */
+        .settings-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 15px; border-radius: 12px; border: 2px solid transparent;
+            cursor: pointer; background: var(--bg-color); margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        .settings-item.active { border-color: var(--primary-color); background: rgba(98, 0, 234, 0.05); }
+        body.dark-mode .settings-item.active { background: rgba(187, 134, 252, 0.1); }
+
         /* --- FAB --- */
         .fab {
             position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px;
@@ -268,6 +278,10 @@
                 
                 <button class="menu-item" onclick="openDeleted()">
                     <span class="material-icons-round">delete</span> Bin
+                </button>
+
+                <button class="menu-item" onclick="openSettings()">
+                    <span class="material-icons-round">settings</span> Settings
                 </button>
                 
                 <button class="menu-item" onclick="toggleTheme()">
@@ -353,9 +367,7 @@
                 <button class="btn-mini" onclick="closeHistory()"><span class="material-icons-round">close</span></button>
             </div>
             <p style="font-size:0.8rem; color:var(--subtext-color); margin-top:5px;">Tasks are moved here 24 hours after completion.</p>
-            
             <div id="historyList" class="history-list-container"></div>
-            
             <div style="margin-top:10px;">
                 <button class="btn-text" style="color:var(--danger-color); width:100%" onclick="clearHistory()">Clear History</button>
             </div>
@@ -369,12 +381,23 @@
                 <button class="btn-mini" onclick="closeDeleted()"><span class="material-icons-round">close</span></button>
             </div>
             <p style="font-size:0.8rem; color:var(--subtext-color); margin-top:5px;">Restore tasks or delete them forever.</p>
-            
             <div id="deletedList" class="history-list-container"></div>
-            
             <div style="margin-top:10px;">
                 <button class="btn-text" style="color:var(--danger-color); width:100%" onclick="emptyBin()">Empty Bin</button>
             </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal-overlay" onclick="if(event.target===this) closeSettings()">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 style="margin:0">Settings</h2>
+                <button class="btn-mini" onclick="closeSettings()"><span class="material-icons-round">close</span></button>
+            </div>
+            
+            <h4 style="margin:20px 0 10px; color:var(--primary-color)">Notification Sound</h4>
+            <div id="tuneList"></div>
+            <p style="font-size:0.8rem; color:var(--subtext-color)">Tap to preview and select.</p>
         </div>
     </div>
 
@@ -413,6 +436,7 @@
         let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
         let historyTasks = JSON.parse(localStorage.getItem('history')) || [];
         let deletedTasks = JSON.parse(localStorage.getItem('deleted')) || []; 
+        let currentTune = localStorage.getItem('tune') || 'beep';
         
         let sortField = localStorage.getItem('sortField') || 'manual';
         let sortOrder = localStorage.getItem('sortOrder') || 'desc';
@@ -420,11 +444,66 @@
         let currentMode = 'add';
         let currentTimerTask = null;
         let wakeLock = null;
-        let audioCtx;
         let dialogResolve = null;
 
         // Run archiving check on startup
         checkArchiving();
+
+        /* --- Audio System --- */
+        const audioSystem = {
+            ctx: null,
+            init: function() {
+                if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+            },
+            play: function(type) {
+                this.init();
+                const ctx = this.ctx;
+                const t = ctx.currentTime;
+                
+                if (type === 'beep') {
+                    const o = ctx.createOscillator(); const g = ctx.createGain();
+                    o.connect(g); g.connect(ctx.destination);
+                    o.type = 'sine'; o.frequency.value = 600;
+                    g.gain.setValueAtTime(0.1, t);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+                    o.start(t); o.stop(t + 0.5);
+                } 
+                else if (type === 'chime') {
+                    [880, 1100, 1320].forEach((freq, i) => {
+                        const o = ctx.createOscillator(); const g = ctx.createGain();
+                        o.connect(g); g.connect(ctx.destination);
+                        o.type = 'sine'; o.frequency.value = freq;
+                        const start = t + (i * 0.1);
+                        g.gain.setValueAtTime(0, start);
+                        g.gain.linearRampToValueAtTime(0.1, start + 0.05);
+                        g.gain.exponentialRampToValueAtTime(0.001, start + 1.5);
+                        o.start(start); o.stop(start + 1.5);
+                    });
+                }
+                else if (type === 'retro') {
+                    const o = ctx.createOscillator(); const g = ctx.createGain();
+                    o.connect(g); g.connect(ctx.destination);
+                    o.type = 'square'; 
+                    o.frequency.setValueAtTime(440, t);
+                    o.frequency.linearRampToValueAtTime(880, t + 0.1);
+                    o.frequency.setValueAtTime(880, t + 0.1);
+                    o.frequency.linearRampToValueAtTime(1760, t + 0.2);
+                    g.gain.setValueAtTime(0.05, t);
+                    g.gain.linearRampToValueAtTime(0, t + 0.4);
+                    o.start(t); o.stop(t + 0.4);
+                }
+                else if (type === 'warm') {
+                    const o = ctx.createOscillator(); const g = ctx.createGain();
+                    o.connect(g); g.connect(ctx.destination);
+                    o.type = 'triangle'; o.frequency.value = 300;
+                    g.gain.setValueAtTime(0, t);
+                    g.gain.linearRampToValueAtTime(0.2, t + 0.2); 
+                    g.gain.linearRampToValueAtTime(0, t + 1.5);
+                    o.start(t); o.stop(t + 1.5);
+                }
+            }
+        };
 
         /* --- Archiving Logic --- */
         function checkArchiving() {
@@ -686,6 +765,51 @@
                 deletedTasks = [];
                 saveDeleted(); renderDeleted();
             }
+        }
+
+        /* --- Settings Functions --- */
+        function openSettings() {
+            document.getElementById('dropdownMenu').classList.remove('show');
+            document.getElementById('settingsModal').classList.add('open');
+            renderSettings();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('open');
+        }
+
+        function renderSettings() {
+            const tunes = [
+                { id: 'beep', name: 'Standard Beep', icon: 'notifications' },
+                { id: 'chime', name: 'Polite Chime', icon: 'notifications_active' },
+                { id: 'retro', name: '8-Bit Retro', icon: 'videogame_asset' },
+                { id: 'warm', name: 'Warm Ambient', icon: 'spa' }
+            ];
+
+            const list = document.getElementById('tuneList');
+            list.innerHTML = '';
+
+            tunes.forEach(tune => {
+                const div = document.createElement('div');
+                div.className = `settings-item ${currentTune === tune.id ? 'active' : ''}`;
+                div.onclick = () => selectTune(tune.id);
+                
+                div.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <span class="material-icons-round" style="color:var(--primary-color)">${tune.icon}</span>
+                        <span>${tune.name}</span>
+                    </div>
+                    ${currentTune === tune.id ? '<span class="material-icons-round" style="color:var(--success-color)">check_circle</span>' : ''}
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function selectTune(id) {
+            currentTune = id;
+            localStorage.setItem('tune', currentTune);
+            renderSettings();
+            audioSystem.play(id); // Preview sound
         }
 
         /* --- Timer Done Modal Logic --- */
@@ -951,7 +1075,7 @@
             }
         }
         function toggleTimer(id) {
-            initAudio();
+            audioSystem.init(); // Init Audio Context on interaction
             requestNotificationPermission(); // Ask for permission on click
             const t = tasks.find(x=>x.id===id);
             if(!t.isRunning) {
@@ -1065,7 +1189,7 @@
         function saveDeleted() { localStorage.setItem('deleted', JSON.stringify(deletedTasks)); }
         
         function exportData() {
-            const data = { tasks: tasks, history: historyTasks, deleted: deletedTasks };
+            const data = { tasks: tasks, history: historyTasks, deleted: deletedTasks, tune: currentTune };
             const a = document.createElement('a');
             a.href = "data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(data));
             a.download='tasks_backup.json'; a.click();
@@ -1080,6 +1204,7 @@
                     tasks = data.tasks || [];
                     historyTasks = data.history || [];
                     deletedTasks = data.deleted || [];
+                    if(data.tune) currentTune = data.tune;
                 }
                 saveData(); saveHistory(); saveDeleted(); render();
             };
@@ -1126,10 +1251,9 @@
                     u = true;
                     if(t.remainingTime === 0) { 
                         t.isRunning = false; 
-                        playSound(); 
+                        audioSystem.play(currentTune); // Play selected tune
                         sendNotification("Timer Finished", `Completed: ${t.name}`);
-                        // showDialog("Timer Done", "Task completed: " + t.name, false); 
-                        openTimerDoneModal(t); // NEW: Open custom modal instead of generic dialog
+                        openTimerDoneModal(t); 
                         relWL(); 
                     }
                 }
@@ -1151,13 +1275,6 @@
             }
         }, 1000);
 
-        function initAudio(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); }
-        function playSound(){
-            initAudio(); const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
-            o.connect(g); g.connect(audioCtx.destination); o.type='sine'; o.frequency.value=600;
-            g.gain.value=0.1; o.start(); o.stop(audioCtx.currentTime+0.5);
-            if(navigator.vibrate) navigator.vibrate(200);
-        }
         async function reqWL(){ try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){} }
         function relWL(){ if(wakeLock){wakeLock.release(); wakeLock=null;} }
 
