@@ -820,6 +820,7 @@
                 tasks.forEach(x => x.isRunning = false);
                 t.isRunning = true; reqWL();
             } else { t.isRunning = false; relWL(); }
+            saveData(); // Save status
             render();
         }
         async function deleteTask(id) {
@@ -962,7 +963,10 @@
                     }
                 }
             });
-            if(u) render();
+            if(u) {
+                saveData(); // Save every second
+                render();
+            }
         }, 1000);
 
         function initAudio(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); }
@@ -979,4 +983,3 @@
     </script>
 </body>
 </html>
-
